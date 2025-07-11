@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Matteo & Camilla - Una dolce attesa</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #e3f2fd 0%, #fce4ec 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+            touch-action: none;
+        }
+
+        .container {
+            text-align: center;
+            padding: 20px;
+            position: relative;
+            z-index: 10;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: opacity 0.5s ease;
+        }
+
+        .glass-card.hide {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            font-weight: 600;
+            background: linear-gradient(45deg, #2196F3, #E91E63);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+        }
+
+        .calendar-dots {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 40px;
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.1);
+            animation: fill-dot 3s ease-in-out infinite;
+        }
+
+        .dot:nth-child(1) { animation-delay: 0s; }
+        .dot:nth-child(2) { animation-delay: 0.5s; }
+        .dot:nth-child(3) { animation-delay: 1s; }
+        .dot:nth-child(4) { animation-delay: 1.5s; }
+        .dot:nth-child(5) { animation-delay: 2s; }
+        .dot:nth-child(6) { animation-delay: 2.5s; }
+
+        @keyframes fill-dot {
+            0%, 100% { 
+                background: rgba(0, 0, 0, 0.1);
+                transform: scale(1);
+            }
+            50% { 
+                background: linear-gradient(45deg, #2196F3, #E91E63);
+                transform: scale(1.3);
+            }
+        }
+
+        .rattle-container {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            margin: 40px auto;
+            cursor: grab;
+            user-select: none;
+        }
+
+        .rattle-container:active {
+            cursor: grabbing;
+        }
+
+        .rattle {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transition: transform 0.05s ease-out;
+        }
+
+        .rattle-ball {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #64B5F6 0%, #64B5F6 48%, #fff 50%, #F48FB1 52%, #F48FB1 100%);
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            box-shadow: 
+                0 10px 30px rgba(0, 0, 0, 0.2),
+                inset 0 -5px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .rattle-handle {
+            width: 30px;
+            height: 80px;
+            background: linear-gradient(135deg, #FFE082, #FFD54F);
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .star {
+            position: absolute;
+            color: white;
+            font-size: 20px;
+            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .star:nth-child(3) { top: 30%; left: 20%; }
+        .star:nth-child(4) { top: 40%; right: 25%; }
+        .star:nth-child(5) { top: 60%; left: 35%; }
+
+        .instruction {
+            font-size: 1.1em;
+            color: #666;
+            margin-top: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .shake-progress {
+            width: 100%;
+            height: 8px;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 4px;
+            margin-top: 20px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .shake-progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #2196F3, #E91E63);
+            border-radius: 4px;
+            transition: width 0.1s;
+        }
+
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: #E91E63;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .decoration {
+            position: absolute;
+            font-size: 2em;
+            opacity: 0.1;
+            animation: float-decoration 8s ease-in-out infinite;
+        }
+
+        .decoration:nth-child(1) { top: 10%; left: 10%; animation-delay: 0s; }
+        .decoration:nth-child(2) { top: 20%; right: 15%; animation-delay: 2s; }
+        .decoration:nth-child(3) { bottom: 20%; left: 15%; animation-delay: 4s; }
+        .decoration:nth-child(4) { bottom: 10%; right: 10%; animation-delay: 6s; }
+
+        @keyframes float-decoration {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-30px) rotate(180deg); }
+        }
+
+        .reveal-text {
+            font-size: 3em;
+            font-weight: 700;
+            color: #E91E63;
+            opacity: 0;
+            transform: scale(0);
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 100;
+            text-shadow: 0 0 30px rgba(233, 30, 99, 0.5);
+            pointer-events: none;
+        }
+
+        .reveal-text.show {
+            animation: reveal 1s ease-out forwards;
+        }
+
+        @keyframes reveal {
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+        }
+
+        .names {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 1.2em;
+            color: #666;
+            font-weight: 300;
+        }
+
+        @media (max-width: 480px) {
+            h1 { font-size: 2em; }
+            .rattle-container { width: 150px; height: 150px; }
+            .rattle-ball { width: 90px; height: 90px; }
+            .rattle-handle { width: 25px; height: 60px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="names">Matteo & Camilla</div>
+    
+    <div class="decoration">👶</div>
+    <div class="decoration">🍼</div>
+    <div class="decoration">⭐</div>
+    <div class="decoration">💕</div>
+
+    <div class="container">
+        <div class="glass-card">
+            <h1>È in arrivo...</h1>
+            
+            <div class="calendar-dots">
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+            </div>
+            
+            <div class="rattle-container" id="rattleContainer">
+                <div class="rattle" id="rattle">
+                    <div class="rattle-ball">
+                        <div class="star">✨</div>
+                        <div class="star">⭐</div>
+                        <div class="star">✨</div>
+                    </div>
+                    <div class="rattle-handle"></div>
+                </div>
+            </div>
+            
+            <div class="instruction">
+                <span>👋</span>
+                <span>Tieni premuto e scuoti il sonaglino!</span>
+            </div>
+            
+            <div class="shake-progress">
+                <div class="shake-progress-bar" id="progressBar"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="reveal-text" id="revealText">È UNA FEMMINUCCIA! 👶🏼‍♀️🎀</div>
+
+    <script>
+        let isDragging = false;
+        let previousX = 0;
+        let shakeCount = 0;
+        let progress = 0;
+        let revealed = false;
+        let directionChanges = 0;
+        let lastDirection = 0;
+        
+        const rattle = document.getElementById('rattle');
+        const rattleContainer = document.getElementById('rattleContainer');
+        const revealText = document.getElementById('revealText');
+        const progressBar = document.getElementById('progressBar');
+
+        function createConfetti() {
+            for (let i = 0; i < 200; i++) {
+                setTimeout(() => {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    confetti.style.left = Math.random() * 100 + '%';
+                    confetti.style.top = -10 + '%';
+                    confetti.style.width = Math.random() * 10 + 5 + 'px';
+                    confetti.style.height = confetti.style.width;
+                    confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+                    
+                    const pinkShades = ['#E91E63', '#F48FB1', '#FCE4EC', '#FF69B4', '#FFB6C1', '#FFC0CB'];
+                    confetti.style.background = pinkShades[Math.floor(Math.random() * pinkShades.length)];
+                    
+                    document.body.appendChild(confetti);
+                    
+                    confetti.animate([
+                        {
+                            transform: `translate(0, 0) rotate(0deg)`,
+                            opacity: 1
+                        },
+                        {
+                            transform: `translate(${(Math.random() - 0.5) * 300}px, ${window.innerHeight}px) rotate(${Math.random() * 720}deg)`,
+                            opacity: 0
+                        }
+                    ], {
+                        duration: 3000 + Math.random() * 2000,
+                        easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+                    }).onfinish = () => confetti.remove();
+                }, i * 15);
+            }
+        }
+
+        function explodeRattle() {
+            if (revealed) return;
+            revealed = true;
+            
+            // Nascondi la card principale
+            document.querySelector('.glass-card').classList.add('hide');
+            
+            rattle.animate([
+                { transform: 'rotate(0deg) scale(1)', opacity: 1 },
+                { transform: 'rotate(720deg) scale(2)', opacity: 0 }
+            ], {
+                duration: 800,
+                easing: 'cubic-bezier(0.68, -0.55, 0.265, 1.55)'
+            }).onfinish = () => {
+                rattleContainer.style.display = 'none';
+            };
+            
+            setTimeout(() => {
+                createConfetti();
+                revealText.classList.add('show');
+            }, 400);
+        }
+
+        function handleShake(currentX) {
+            if (!isDragging || revealed) return;
+            
+            const deltaX = currentX - previousX;
+            const currentDirection = deltaX > 0 ? 1 : -1;
+            
+            // Rileva cambio di direzione
+            if (lastDirection !== 0 && currentDirection !== lastDirection && Math.abs(deltaX) > 5) {
+                directionChanges++;
+                progress = Math.min(100, progress + 3);
+                progressBar.style.width = progress + '%';
+                
+                // Animazione del sonaglino
+                const rotation = directionChanges % 2 === 0 ? 15 : -15;
+                rattle.style.transform = `rotate(${rotation}deg) scale(${1 + progress * 0.005})`;
+                
+                if (progress >= 100) {
+                    explodeRattle();
+                }
+            }
+            
+            lastDirection = currentDirection;
+            previousX = currentX;
+        }
+
+        // Mouse events
+        rattleContainer.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            isDragging = true;
+            previousX = e.clientX;
+            lastDirection = 0;
+            rattleContainer.style.cursor = 'grabbing';
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                handleShake(e.clientX);
+            }
+        });
+
+        window.addEventListener('mouseup', () => {
+            isDragging = false;
+            lastDirection = 0;
+            rattleContainer.style.cursor = 'grab';
+            if (!revealed) {
+                rattle.style.transform = 'rotate(0deg) scale(1)';
+            }
+        });
+
+        // Touch events
+        rattleContainer.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            isDragging = true;
+            previousX = e.touches[0].clientX;
+            lastDirection = 0;
+        });
+
+        window.addEventListener('touchmove', (e) => {
+            if (isDragging) {
+                e.preventDefault();
+                handleShake(e.touches[0].clientX);
+            }
+        }, { passive: false });
+
+        window.addEventListener('touchend', () => {
+            isDragging = false;
+            lastDirection = 0;
+            if (!revealed) {
+                rattle.style.transform = 'rotate(0deg) scale(1)';
+            }
+        });
+
+        // Decremento progressivo
+        setInterval(() => {
+            if (!isDragging && progress > 0 && !revealed) {
+                progress = Math.max(0, progress - 1);
+                progressBar.style.width = progress + '%';
+            }
+        }, 200);
+
+        // Device motion fallback
+        if (window.DeviceMotionEvent) {
+            let lastTime = 0;
+            window.addEventListener('devicemotion', (e) => {
+                if (revealed) return;
+                
+                const current = e.accelerationIncludingGravity;
+                const currentTime = new Date().getTime();
+                
+                if (current && currentTime - lastTime > 100) {
+                    const shakeIntensity = Math.abs(current.x) + Math.abs(current.y) + Math.abs(current.z);
+                    
+                    if (shakeIntensity > 20) {
+                        progress = Math.min(100, progress + 2);
+                        progressBar.style.width = progress + '%';
+                        
+                        if (progress >= 100) {
+                            explodeRattle();
+                        }
+                    }
+                    lastTime = currentTime;
+                }
+            });
+        }
+    </script>
+</body>
+</html>
