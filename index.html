@@ -325,7 +325,7 @@
             
             <div class="instruction">
                 <span>👉</span>
-                <span>Trascina il ciuccio per scoprire!</span>
+                <span>Trascina il biberon per scoprire!</span>
             </div>
         </div>
     </div>
@@ -342,7 +342,7 @@
         const sliderTrack = document.querySelector('.slider-track');
         
         let trackRect = sliderTrack.getBoundingClientRect();
-        let maxPosition = trackRect.width - 80; // larghezza track - larghezza ciuccio
+        let maxPosition = trackRect.width - 80; // larghezza track - larghezza biberon
 
         function createConfetti() {
             for (let i = 0; i < 200; i++) {
@@ -402,12 +402,12 @@
             if (!isDragging || revealed) return;
             
             const rect = sliderTrack.getBoundingClientRect();
-            let x = clientX - rect.left - 40; // 40 = metà della larghezza del ciuccio
+            let x = clientX - rect.left - 40; // 40 = metà della larghezza del biberon
             
             // Limita la posizione
             x = Math.max(0, Math.min(x, maxPosition));
             
-            // Aggiorna posizione ciuccio e riempimento
+            // Aggiorna posizione biberon e riempimento
             pacifierSlider.style.left = x + 'px';
             const percentage = (x / maxPosition) * 100;
             sliderFill.style.width = percentage + '%';
