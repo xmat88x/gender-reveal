@@ -94,19 +94,19 @@
             width: 200px;
             height: 200px;
             margin: 40px auto;
-            cursor: grab;
             user-select: none;
-        }
-
-        .rattle-container:active {
-            cursor: grabbing;
         }
 
         .rattle {
             width: 100%;
             height: 100%;
             position: relative;
-            transition: transform 0.05s ease-out;
+            animation: gentle-float 3s ease-in-out infinite;
+        }
+
+        @keyframes gentle-float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
         }
 
         .rattle-ball {
@@ -146,32 +146,67 @@
         .star:nth-child(4) { top: 40%; right: 25%; }
         .star:nth-child(5) { top: 60%; left: 35%; }
 
+        .slider-container {
+            margin-top: 50px;
+            position: relative;
+            width: 100%;
+            max-width: 350px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .slider-track {
+            width: 100%;
+            height: 60px;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .slider-fill {
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #2196F3, #E91E63);
+            border-radius: 30px;
+            transition: width 0.1s ease-out;
+        }
+
+        .pacifier-slider {
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 80px;
+            height: 80px;
+            cursor: grab;
+            user-select: none;
+            z-index: 10;
+            transition: transform 0.1s;
+        }
+
+        .pacifier-slider:active {
+            cursor: grabbing;
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        .pacifier-emoji {
+            font-size: 50px;
+            filter: grayscale(100%);
+            opacity: 0.8;
+        }
+
         .instruction {
             font-size: 1.1em;
             color: #666;
-            margin-top: 30px;
+            margin-top: 20px;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 10px;
-        }
-
-        .shake-progress {
-            width: 100%;
-            height: 8px;
-            background: rgba(0, 0, 0, 0.1);
-            border-radius: 4px;
-            margin-top: 20px;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .shake-progress-bar {
-            height: 100%;
-            width: 0%;
-            background: linear-gradient(90deg, #2196F3, #E91E63);
-            border-radius: 4px;
-            transition: width 0.1s;
         }
 
         .confetti {
@@ -241,6 +276,9 @@
             .rattle-container { width: 150px; height: 150px; }
             .rattle-ball { width: 90px; height: 90px; }
             .rattle-handle { width: 25px; height: 60px; }
+            .slider-track { height: 50px; }
+            .pacifier-slider { width: 70px; height: 70px; }
+            .pacifier-emoji { font-size: 40px; }
         }
     </style>
 </head>
@@ -265,7 +303,7 @@
                 <div class="dot"></div>
             </div>
             
-            <div class="rattle-container" id="rattleContainer">
+            <div class="rattle-container">
                 <div class="rattle" id="rattle">
                     <div class="rattle-ball">
                         <div class="star">✨</div>
@@ -276,13 +314,18 @@
                 </div>
             </div>
             
-            <div class="instruction">
-                <span>👋</span>
-                <span>Tieni premuto e scuoti il sonaglino!</span>
+            <div class="slider-container">
+                <div class="slider-track">
+                    <div class="slider-fill" id="sliderFill"></div>
+                    <div class="pacifier-slider" id="pacifierSlider">
+                        <div class="pacifier-emoji">🍼</div>
+                    </div>
+                </div>
             </div>
             
-            <div class="shake-progress">
-                <div class="shake-progress-bar" id="progressBar"></div>
+            <div class="instruction">
+                <span>👉</span>
+                <span>Trascina il ciuccio per scoprire!</span>
             </div>
         </div>
     </div>
@@ -291,17 +334,15 @@
 
     <script>
         let isDragging = false;
-        let previousX = 0;
-        let shakeCount = 0;
-        let progress = 0;
         let revealed = false;
-        let directionChanges = 0;
-        let lastDirection = 0;
-        
+        const pacifierSlider = document.getElementById('pacifierSlider');
+        const sliderFill = document.getElementById('sliderFill');
         const rattle = document.getElementById('rattle');
-        const rattleContainer = document.getElementById('rattleContainer');
         const revealText = document.getElementById('revealText');
-        const progressBar = document.getElementById('progressBar');
+        const sliderTrack = document.querySelector('.slider-track');
+        
+        let trackRect = sliderTrack.getBoundingClientRect();
+        let maxPosition = trackRect.width - 80; // larghezza track - larghezza ciuccio
 
         function createConfetti() {
             for (let i = 0; i < 200; i++) {
@@ -349,9 +390,7 @@
             ], {
                 duration: 800,
                 easing: 'cubic-bezier(0.68, -0.55, 0.265, 1.55)'
-            }).onfinish = () => {
-                rattleContainer.style.display = 'none';
-            };
+            });
             
             setTimeout(() => {
                 createConfetti();
@@ -359,110 +398,118 @@
             }, 400);
         }
 
-        function handleShake(currentX) {
+        function updateSliderPosition(clientX) {
             if (!isDragging || revealed) return;
             
-            const deltaX = currentX - previousX;
-            const currentDirection = deltaX > 0 ? 1 : -1;
+            const rect = sliderTrack.getBoundingClientRect();
+            let x = clientX - rect.left - 40; // 40 = metà della larghezza del ciuccio
             
-            // Rileva cambio di direzione
-            if (lastDirection !== 0 && currentDirection !== lastDirection && Math.abs(deltaX) > 5) {
-                directionChanges++;
-                progress = Math.min(100, progress + 3);
-                progressBar.style.width = progress + '%';
-                
-                // Animazione del sonaglino
-                const rotation = directionChanges % 2 === 0 ? 15 : -15;
-                rattle.style.transform = `rotate(${rotation}deg) scale(${1 + progress * 0.005})`;
-                
-                if (progress >= 100) {
-                    explodeRattle();
-                }
+            // Limita la posizione
+            x = Math.max(0, Math.min(x, maxPosition));
+            
+            // Aggiorna posizione ciuccio e riempimento
+            pacifierSlider.style.left = x + 'px';
+            const percentage = (x / maxPosition) * 100;
+            sliderFill.style.width = percentage + '%';
+            
+            // Animazione sonaglino basata sul progresso
+            rattle.style.transform = `scale(${1 + percentage * 0.005}) rotate(${percentage * 3.6}deg)`;
+            
+            // Se arriva al 100%, rivela
+            if (percentage >= 98) {
+                explodeRattle();
             }
-            
-            lastDirection = currentDirection;
-            previousX = currentX;
         }
 
         // Mouse events
-        rattleContainer.addEventListener('mousedown', (e) => {
+        pacifierSlider.addEventListener('mousedown', (e) => {
             e.preventDefault();
             isDragging = true;
-            previousX = e.clientX;
-            lastDirection = 0;
-            rattleContainer.style.cursor = 'grabbing';
+            pacifierSlider.style.cursor = 'grabbing';
         });
 
-        window.addEventListener('mousemove', (e) => {
+        document.addEventListener('mousemove', (e) => {
             if (isDragging) {
-                handleShake(e.clientX);
+                updateSliderPosition(e.clientX);
             }
         });
 
-        window.addEventListener('mouseup', () => {
-            isDragging = false;
-            lastDirection = 0;
-            rattleContainer.style.cursor = 'grab';
-            if (!revealed) {
-                rattle.style.transform = 'rotate(0deg) scale(1)';
+        document.addEventListener('mouseup', () => {
+            if (isDragging) {
+                isDragging = false;
+                pacifierSlider.style.cursor = 'grab';
+                
+                // Se non è stato completato, torna indietro
+                if (!revealed) {
+                    const currentPosition = parseInt(pacifierSlider.style.left) || 0;
+                    const percentage = (currentPosition / maxPosition) * 100;
+                    
+                    if (percentage < 98) {
+                        // Animazione di ritorno
+                        pacifierSlider.style.transition = 'left 0.5s ease-out';
+                        sliderFill.style.transition = 'width 0.5s ease-out';
+                        
+                        pacifierSlider.style.left = '0px';
+                        sliderFill.style.width = '0%';
+                        rattle.style.transform = 'scale(1) rotate(0deg)';
+                        
+                        setTimeout(() => {
+                            pacifierSlider.style.transition = '';
+                            sliderFill.style.transition = '';
+                        }, 500);
+                    }
+                }
             }
         });
 
         // Touch events
-        rattleContainer.addEventListener('touchstart', (e) => {
+        pacifierSlider.addEventListener('touchstart', (e) => {
             e.preventDefault();
             isDragging = true;
-            previousX = e.touches[0].clientX;
-            lastDirection = 0;
         });
 
-        window.addEventListener('touchmove', (e) => {
+        document.addEventListener('touchmove', (e) => {
             if (isDragging) {
                 e.preventDefault();
-                handleShake(e.touches[0].clientX);
+                updateSliderPosition(e.touches[0].clientX);
             }
         }, { passive: false });
 
-        window.addEventListener('touchend', () => {
-            isDragging = false;
-            lastDirection = 0;
-            if (!revealed) {
-                rattle.style.transform = 'rotate(0deg) scale(1)';
+        document.addEventListener('touchend', () => {
+            if (isDragging) {
+                isDragging = false;
+                
+                if (!revealed) {
+                    const currentPosition = parseInt(pacifierSlider.style.left) || 0;
+                    const percentage = (currentPosition / maxPosition) * 100;
+                    
+                    if (percentage < 98) {
+                        pacifierSlider.style.transition = 'left 0.5s ease-out';
+                        sliderFill.style.transition = 'width 0.5s ease-out';
+                        
+                        pacifierSlider.style.left = '0px';
+                        sliderFill.style.width = '0%';
+                        rattle.style.transform = 'scale(1) rotate(0deg)';
+                        
+                        setTimeout(() => {
+                            pacifierSlider.style.transition = '';
+                            sliderFill.style.transition = '';
+                        }, 500);
+                    }
+                }
             }
         });
 
-        // Decremento progressivo
-        setInterval(() => {
-            if (!isDragging && progress > 0 && !revealed) {
-                progress = Math.max(0, progress - 1);
-                progressBar.style.width = progress + '%';
-            }
-        }, 200);
+        // Previeni selezione del testo durante il trascinamento
+        document.addEventListener('selectstart', (e) => {
+            if (isDragging) e.preventDefault();
+        });
 
-        // Device motion fallback
-        if (window.DeviceMotionEvent) {
-            let lastTime = 0;
-            window.addEventListener('devicemotion', (e) => {
-                if (revealed) return;
-                
-                const current = e.accelerationIncludingGravity;
-                const currentTime = new Date().getTime();
-                
-                if (current && currentTime - lastTime > 100) {
-                    const shakeIntensity = Math.abs(current.x) + Math.abs(current.y) + Math.abs(current.z);
-                    
-                    if (shakeIntensity > 20) {
-                        progress = Math.min(100, progress + 2);
-                        progressBar.style.width = progress + '%';
-                        
-                        if (progress >= 100) {
-                            explodeRattle();
-                        }
-                    }
-                    lastTime = currentTime;
-                }
-            });
-        }
+        // Aggiorna dimensioni al resize
+        window.addEventListener('resize', () => {
+            trackRect = sliderTrack.getBoundingClientRect();
+            maxPosition = trackRect.width - 80;
+        });
     </script>
 </body>
 </html>
